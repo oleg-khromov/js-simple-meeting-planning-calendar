@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create new event</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+  <!-- <link rel="stylesheet" href="./index.css"> -->
+<script defer src="./assets/js/main.js"></script><link href="./assets/css/main.css" rel="stylesheet"></head>
+<body>
+  <div id="app">
+    <div id="alerts" class="fixed-top alerts-wrap"></div>
+    <div class="container">
+      <div class="row row-panel">
+        <div class="col d-flex justify-content-between align-items-center">
+          <h1>Create event</h1>
+          <a href="./index.html" role="button" class="btn btn-dark">Back</a>
+        </div>
+      </div>
+      <div class="row justify-content-md-center">
+        <div class="col-md-10 col-lg-9 col-xl-8">
+          <div class="col-wrap">
+            <form action="#" id="createEventForm">
+              <div class="mb-3 row">
+                <label for="nameEvent" class="col-sm-4 col-lg-3 col-form-label">Name of the event:</label>
+                <div class="col-sm-8 col-lg-9">
+                  <input type="text" class="form-control" id="nameEvent" name="nameEvent">
+                </div>
+              </div>
+              <div class="mb-3 row">
+                <label for="participants" class="col-sm-4 col-lg-3 col-form-label">Participants:</label>
+                <div class="col-sm-8 col-lg-9">
+                  <div class="c-drop">
+                    <input id="participants" value="" class="form-select" name="participants" data-drop-type="participants" readonly>
+                  </div>
+                </div>
+              </div>
+              <div class="mb-3 row">
+                <label for="day" class="col-sm-4 col-lg-3 col-form-label">Day:</label>
+                <div class="col-sm-8 col-lg-9">
+                  <select id="day" class="form-select" name="day" data-select-type="day">
+                  </select>
+                </div>
+              </div>
+              <div class="mb-4 row">
+                <label for="time" class="col-sm-4 col-lg-3 col-form-label">Time:</label>
+                <div class="col-sm-8 col-lg-9">
+                  <select id="time" class="form-select" name="time" data-select-type="time">
+                  </select>
+                </div>
+              </div>
+              <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="reset" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+<!-- <script type="module" src="./index.js"></script> -->
+</html>
