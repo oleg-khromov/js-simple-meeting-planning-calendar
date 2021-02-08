@@ -17,9 +17,9 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.js$/,
+        test: /\.js$|jsx/,
         exclude: /node_modules/,
-        //use: ["babel-loader"],
+        // use: ["babel-loader"],
       },
       {
         test: /\.(s*)css$/,
@@ -59,7 +59,7 @@ module.exports = {
     open: true,
     compress: true,
     hot: true,
-    port: 8080,
+    port: 3000,
   },
   resolve: { extensions: [".js"] },
 };

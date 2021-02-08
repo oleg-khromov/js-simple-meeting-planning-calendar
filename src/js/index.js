@@ -1,28 +1,6 @@
-class Model {
-  constructor() {
-    //this.todos = JSON.parse(localStorage.getItem('todos')) || []
-  }
-}
-
-class View  {
-  constructor() {
-    this.app = this.getElement('#table');
-  }
-}
-
-
-class Controller {
-  constructor(model, view) {
-    this.model = model
-    this.view = view
-  }
-}
-
-const app = new Controller(new Model(), new View());
-
-export const users = ["Alex", "Bob", "George", "Sara"];
-export const day = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-export const time = [
+const users = ["Alex", "Bob", "George", "Sara"];
+const day = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+const time = [
   "10:00",
   "11:00",
   "12:00",
@@ -31,204 +9,323 @@ export const time = [
   "15:00",
   "16:00",
   "17:00",
-  "18:00"
+  "18:00",
 ];
 
-if (!localStorage.getItem("calendar")) {
-  const eventsArray = [];
+class Alert {
+  constructor() {
+    this.wrapper = document.querySelector("#alerts");
+    this.wrapper.addEventListener("click", (e) => this.destroy(e), false);
+  }
 
-  localStorage.setItem("calendar", JSON.stringify(eventsArray));
+  render(text, type = "danger") {
+    const div = document.createElement("div");
+    div.className = `alert alert-${type} alert-dismissible fade show`;
+    div.innerHTML = `
+        ${text}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+
+    this.wrapper.prepend(div);
+  }
+
+  show(text, type) {
+    this.render(text, type);
+  }
+
+  destroy(e) {
+    if (e.target || (e.target && e.target.matches(".btn-close"))) {
+      const element = e.target.parentNode;
+      element.classList.remove("show");
+      setTimeout(() => element.remove(), 150);
+    }
+  }
 }
 
-const db = localStorage.getItem("calendar");
-let events = JSON.parse(db);
+class Model {
+  constructor() {
+    this.events = JSON.parse(localStorage.getItem("calendar")) || [];
+  }
 
-const form = document.querySelector("#createEventForm");
+  getEvents() {
+    return this.events;
+  }
 
-if (form) {
-  form.addEventListener("submit", handleSubmitForm, false);
-  form.addEventListener("formdata", handleFormData, false);
-}
+  _setEvents() {
+    localStorage.setItem("calendar", JSON.stringify(this.events));
+  }
 
-function handleSubmitForm(e) {
-  // if ( e.preventDefault ) e.preventDefault();
-  // e.returnValue = false;
-  e.preventDefault();
-  new FormData(form);
-}
+  addEvent(event) {
+    this.events.push(event);
 
-function handleFormData(e) {
-  const data = e.formData;
-  let newEvent = {};
-  let flag = false;
+    this._setEvents();
+  }
 
-  for (let [key, value] of data.entries()) {
-    if (key === "nameEvent") {
-      try {
-        if (!validateField(value, 3)) {
-          flag = true;
-          viewAlert("Invalid field. Min length is 3 characters.");
-          throw new Error("Invalid field. Min length is 3 characters.");
-        }
-      } catch (e) {
-        console.log(e);
+  deleteEvent(id) {
+    const [day, time] = id.split("-");
+    const index = this.events.findIndex(
+      (event) => event.day == day && event.time == time
+    );
+    if (index >= 0) this.events.splice(index, 1);
+
+    this._setEvents();
+  }
+
+  updateEvent({ day, time, newDay, newTime }) {
+    this.events.find((event) => {
+      if (event.day == day && event.time == time) {
+        event.day = newDay;
+        event.time = newTime;
       }
-    }
+    });
 
-    if (key === "participants") {
-      try {
-        if (!validateField(value)) {
-          flag = true;
-          viewAlert("Invalid field. Select at least one user.");
-          throw new Error("Invalid field. Select at least one user.");
-        }
-      } catch (e) {
-        console.log(e);
-      }
-    }
-
-    if (key === "day" || key === "time") {
-      value = Number(value);
-    }
-
-    newEvent[key] = value;
+    this._setEvents();
   }
 
-  //debugger;
-
-  if (flag) {
-    newEvent = null;
-  } else {
-    try {
-      if (!checkBookedData(newEvent)) {
-        events.push(newEvent);
-        localStorage.setItem("calendar", JSON.stringify(events));
-        location.href = "index.html";
-      } else {
-        viewAlert("Failed to create an event. Time slot is already booked.");
-        throw new Error(
-          "Failed to create an event. Time slot is already booked."
-        );
-      }
-    } catch (e) {
-      console.log(e);
-    }
+  checkEvent({ day, time }) {
+    return this.events.find((event) => event.day == day && event.time == time);
   }
 }
 
-function validateField(value, minLenght = 0) {
-  return value.length > minLenght;
-}
-
-function checkBookedData(obj) {
-  const { day, time } = obj;
-
-  return events.find((item) => item.day === day && item.time === time);
-}
-
-function viewAlert(text) {
-  const wrap = document.querySelector("#alerts");
-  let div = document.createElement("div");
-  div.className = "alert alert-danger alert-dismissible fade show";
-  div.innerHTML = `
-      ${text}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  `;
-
-  wrap.prepend(div);
-
-  const btnCloseAlert = document.querySelector(".btn-close");
-  btnCloseAlert.addEventListener("click", handleDestroyAlert, false);
-
-  setTimeout(function () {
-    btnCloseAlert.click();
-    btnCloseAlert.removeEventListener("click", handleDestroyAlert, false);
-  }, 3000);
-
-  function handleDestroyAlert(e) {
-    const element = e.target.parentNode;
-    element.classList.remove("show");
-    setTimeout(() => element.remove(), 150);
-  }
-}
-
-function createTable() {
-  const wrapper = document.querySelector("#table");
-
-  function createNode(tag, parent, classes) {
-    let node = document.createElement(tag);
-
-    if (classes) node.className = classes;
-    parent.append(node);
-
-    return node;
+class View {
+  constructor() {
+    this.main = this.getElement("#app");
+    this.app = this.getElement("#table");
+    this.selects = this.getAllElements("select[data-select-type]");
+    this.drops = this.getAllElements("[data-drop-type]");
+    this.sort = this.getElement("select#sort");
+    this.form = this.getElement("form#createEventForm");
   }
 
-  function createCells(tag, parent, row) {
+  bindShowEvents(callback) {
+    this.onShowEvents = callback;
+  }
+
+  bindAddEvent(callback) {
+    this.onAddEvent = callback;
+  }
+
+  bindGetEvents(callback) {
+    this.onGetEvents = callback;
+  }
+
+  bindCheckEvent(callback) {
+    this.onCheckEvent = callback;
+  }
+
+  getElement(selector) {
+    const element = document.querySelector(selector);
+    return element;
+  }
+
+  getAllElements(selector) {
+    const element = document.querySelectorAll(selector);
+    return element;
+  }
+
+  createElement(tag, className) {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+
+    return element;
+  }
+
+  createElementCells(tag, parent, row) {
     for (let col = 0; col <= day.length; col++) {
       if (tag === "th") {
-        let th = createNode(tag, parent);
+        let th = this.createElement(tag);
         th.innerHTML = col === 0 ? "Name" : day[col - 1];
+        parent.appendChild(th);
       } else {
-        let td = createNode(tag, parent);
+        let td = this.createElement(tag);
         td.innerHTML = col === 0 ? time[row - 1] : null;
-
-        if (col) {
-          td.addEventListener("dragover", (e) => onDragOver(e), false);
-          td.addEventListener("dragleave", (e) => onDragLeave(e), false);
-          td.addEventListener("drop", (e) => onDrop(e), false);
-        }
+        parent.appendChild(td);
       }
     }
   }
 
-  let table = createNode("table", wrapper, "table table-box");
-  let tbody;
+  renderTable() {
+    const table = this.createElement("table", "table table-box");
+    let tbody;
 
-  for (let row = 0; row <= time.length; row++) {
-    if (row === 0) {
-      let thead = createNode("thead", table, "table-light");
-      let tr = createNode("tr", thead);
-      createCells("th", tr);
-      tbody = createNode("tbody", table);
-    } else {
-      let tr = createNode("tr", tbody);
-      createCells("td", tr, row);
+    for (let row = 0; row <= time.length; row++) {
+      if (row === 0) {
+        let thead = this.createElement("thead", "table-light");
+        table.appendChild(thead);
+
+        let tr = this.createElement("tr");
+        thead.appendChild(tr);
+
+        this.createElementCells("th", tr);
+
+        tbody = this.createElement("tbody");
+        table.appendChild(tbody);
+      } else {
+        let tr = this.createElement("tr");
+        tbody.appendChild(tr);
+
+        this.createElementCells("td", tr, row);
+      }
+    }
+
+    this.app.appendChild(table);
+  }
+
+  renderSelect() {
+    const selects = {
+      users,
+      day,
+      time,
+    };
+
+    function createOption(text, index) {
+      const option = document.createElement("option");
+
+      if (typeof index === "number") {
+        option.value = index;
+      } else {
+        option.value = "all";
+      }
+
+      option.innerHTML = text;
+      this.append(option);
+    }
+
+    if (this.selects.length) {
+      this.selects.forEach((select) => {
+        let type = select.dataset.selectType;
+
+        if (type === "users" && select.id === "sort") {
+          createOption.call(select, "All members");
+        }
+
+        selects[type].forEach((item, index) => {
+          createOption.call(select, item, index);
+        });
+      });
     }
   }
-}
 
-if (document.querySelector("#table")) {
-  createTable();
-  renderEvents();
-}
+  renderDrop() {
+    const drops = {
+      users,
+    };
 
-function createPopup() {}
+    function createElement(text, index) {
+      const node = document.createElement("div");
+      node.classList.add("form-check");
+      node.innerHTML = `
+        <input class="form-check-input" name="drop" type="checkbox" value="${index}" id="check${index}">
+        <label class="form-check-label" for="check${index}">
+          ${text}
+        </label>
+      `;
+      this.append(node);
+    }
 
-createPopup.create = (e) => {
-  const str = e.target.closest("td").querySelector(".event__name").innerText;
-  const text = `Are you sure you want to delete <b>"${str}"</b> event?`;
+    if (this.drops.length) {
+      this.drops.forEach((drop) => {
+        let type = drop.dataset.dropType;
 
-  const wrap = document.querySelector("#app");
-  let div = document.createElement("div");
-  div.className = "modal fade";
-  div.innerHTML = `
-      <div class="modal__overlay"></div>
-      <div class="modal__inner">
-        <p class="modal__text">${text}</p>
-        <div class="d-flex justify-content-between align-items-center">
-          <button type="button" class="btn btn-secondary js-modal-close">No</button>
-          <button type="button" class="btn btn-primary js-event-delete">Yes</button>
+        if (type === "participants") type = "users";
+
+        if (drops[type]) {
+          const nodeWrap = document.createElement("div");
+          nodeWrap.classList.add(
+            "c-drop__menu",
+            "shadow",
+            "bg-white",
+            "rounded",
+            "fade"
+          );
+          drop.after(nodeWrap);
+
+          drops[type].forEach((item, index) => {
+            createElement.call(nodeWrap, item, index);
+          });
+
+          drop.addEventListener("click", () => openDrop(nodeWrap), false);
+
+          const checks = nodeWrap.querySelectorAll(".form-check-input");
+
+          checks.forEach((check, index) => {
+            check.addEventListener(
+              "change",
+              () => checkInput.call(drop, drops[type][index]),
+              false
+            );
+          });
+
+          document.addEventListener("click", function (e) {
+            if (
+              !nodeWrap.contains(e.target) &&
+              !nodeWrap.previousSibling.contains(e.target)
+            ) {
+              if (nodeWrap.classList.contains("show")) {
+                nodeWrap.style.display = "none";
+                nodeWrap.classList.remove("show");
+              }
+            }
+          });
+        }
+      });
+    }
+
+    function checkInput(name) {
+      let value = this.value;
+      const arr = value ? value.split(", ") : [];
+
+      if (arr.includes(name)) {
+        arr.splice(arr.indexOf(name), 1);
+      } else {
+        arr.push(name);
+      }
+
+      value = arr.sort().join(", ");
+
+      this.value = value;
+    }
+
+    function openDrop(element) {
+      element.style.display = "block";
+
+      setTimeout(() => {
+        element.classList.add("show");
+      }, 0);
+    }
+  }
+
+  renderModal(e) {
+    const str = e.target.closest("td").querySelector(".event__name").innerText;
+    const eventId = e.target.closest("td").querySelector(".event").dataset
+      .eventId;
+    const text = `Are you sure you want to delete <b>"${str}"</b> event?`;
+
+    const wrap = document.querySelector("#app");
+    let div = document.createElement("div");
+    div.className = "modal fade";
+    div.dataset.modalEventId = eventId;
+    div.innerHTML = `
+        <div class="modal__overlay"></div>
+        <div class="modal__inner">
+          <p class="modal__text">${text}</p>
+          <div class="d-flex justify-content-between align-items-center">
+            <button type="button" class="btn btn-secondary js-modal-close">No</button>
+            <button type="button" class="btn btn-primary js-event-delete">Yes</button>
+          </div>
         </div>
-      </div>
-  `;
+    `;
 
-  wrap.append(div);
+    wrap.append(div);
+  }
 
-  const btnCloseModal = document.querySelector(".js-modal-close");
-  btnCloseModal.addEventListener("click", handleCloseModal, false);
+  deleteEvent(id) {
+    const element = document.querySelector(`[data-event-id=\"${id}\"]`);
+    element.parentNode.innerHTML = "";
+    setTimeout(() => element.remove(), 150);
+  }
 
-  function handleCloseModal(e) {
+  closeModal(e) {
     const element = e.target.closest("#app").querySelector(".modal");
 
     element.classList.remove("show");
@@ -240,282 +337,248 @@ createPopup.create = (e) => {
     //   //element.style.display = "none";
     // }, 0)
     setTimeout(() => element.remove(), 150);
-
-    btnCloseModal.removeEventListener("click", handleCloseModal, false);
-    btnDeleteEvent.removeEventListener("click", handleDeleteEvent, false);
   }
 
-  const btnDeleteEvent = document.querySelector(".js-event-delete");
-  btnDeleteEvent.addEventListener(
-    "click",
-    () => handleDeleteEvent(e, str),
-    false
-  );
+  showEvents(events, sort = "all") {
+    const table = this.getElement("#table table");
 
-  function DeleteEvent(str) {
-    return events.filter((item) => item.nameEvent !== str);
-  }
+    events.map((event) => {
+      const { nameEvent, participants, day, time } = event;
+      const arrParticipants = participants.slice(", ");
 
-  function handleDeleteEvent(e, str) {
-    events = DeleteEvent(str);
-    localStorage.setItem("calendar", JSON.stringify(events));
+      const innerHTML =
+        sort === "all" || arrParticipants.includes(users[sort])
+          ? `
+        <div class="event" draggable="true" data-event-id="${day}-${time}">
+          <span class="event__name">${nameEvent}</span>
+          <span class="btn-close event__btn-del js-modal-open"></span>
+        </div>
+      `
+          : null;
 
-    const element = e.target.closest("td").querySelector(".event");
-    setTimeout(() => element.remove(), 150);
+      const cell = +day + 1;
+      const row = +time + 1;
 
-    handleCloseModal(e);
-  }
-};
-
-function openModal(e) {
-  createPopup.create(e);
-
-  const element = e.target.closest("#app").querySelector(".modal");
-  element.style.display = "block";
-
-  setTimeout(() => {
-    element.classList.add("show");
-  }, 0);
-}
-
-function renderEvents(sort = "all") {
-  const table = document.querySelector("#table table");
-
-  events.map((item) => {
-    const { nameEvent, participants, day, time } = item;
-    const arr = participants.slice(", ");
-
-    const event =
-      sort === "all" || arr.includes(users[sort])
-        ? `
-      <div class="event" draggable="true" data-event-id="${day}-${time}">
-        <span class="event__name">${nameEvent}</span>
-        <span class="btn-close event__btn-del js-modal-open"></span>
-      </div>
-    `
-        : null;
-
-    const cell = +day + 1;
-    const row = +time + 1;
-
-    table.rows[row].cells[cell].innerHTML = event;
-  });
-
-  const btnOpenModal = document.querySelectorAll(".js-modal-open");
-
-  btnOpenModal.forEach(function (btn, index) {
-    btn.addEventListener("click", (e) => openModal(e), false);
-  });
-
-  const eventElement = document.querySelectorAll(".event");
-
-  eventElement.forEach(function (element) {
-    element.addEventListener("dragstart", (e) => onDragStart(e), false);
-  });
-}
-
-const sort = document.querySelector("#sort");
-
-if (sort) {
-  sort.addEventListener("change", handleSortTable, false);
-}
-
-function handleSortTable(e) {
-  renderEvents(e.target.value);
-}
-
-function selectCreator() {
-  const selects = {
-    users,
-    day,
-    time,
-  };
-
-  const elements = document.querySelectorAll("select[data-select-type]");
-
-  function createOption(text, index) {
-    const option = document.createElement("option");
-
-    if (typeof index === "number") {
-      option.value = index;
-    } else {
-      option.value = "all";
-    }
-
-    option.innerHTML = text;
-    this.append(option);
-  }
-
-  if (elements.length) {
-    elements.forEach((element) => {
-      let type = element.dataset.selectType;
-
-      //if (type === "participants") type = "users";
-
-      if (type === "users" && element.id === "sort") {
-        createOption.call(element, "All members");
-      }
-
-      selects[type].forEach((item, index) => {
-        createOption.call(element, item, index);
-      });
+      table.rows[row].cells[cell].innerHTML = innerHTML;
     });
   }
-}
 
-selectCreator();
+  submitForm() {
+    const fields = ["nameEvent", "participants", "day", "time"];
+    const elements = this.form.elements;
+    let newEvent = {};
+    let flag = false;
+    const alertMsg = new Alert();
 
-function dropCreator() {
-  const drops = {
-    users,
-  };
+    [...elements].forEach((field) => {
+      if (fields.includes(field.name)) {
+        const key = field.name;
+        let value = field.value;
 
-  const elements = document.querySelectorAll("[data-drop-type]");
-
-  function createElement(text, index) {
-    const node = document.createElement("div");
-    node.classList.add("form-check");
-    node.innerHTML = `
-      <input class="form-check-input" type="checkbox" value="${index}" id="check${index}">
-      <label class="form-check-label" for="check${index}">
-        ${text}
-      </label>
-    `;
-    this.append(node);
-  }
-
-  if (elements.length) {
-    elements.forEach((element) => {
-      let type = element.dataset.dropType;
-
-      if (type === "participants") type = "users";
-
-      if (drops[type]) {
-        const nodeWrap = document.createElement("div");
-        nodeWrap.classList.add(
-          "c-drop__menu",
-          "shadow",
-          "bg-white",
-          "rounded",
-          "fade"
-        );
-        element.after(nodeWrap);
-
-        drops[type].forEach((item, index) => {
-          createElement.call(nodeWrap, item, index);
-        });
-
-        element.addEventListener("click", () => openDrop(nodeWrap), false);
-
-        const checks = nodeWrap.querySelectorAll(".form-check-input");
-
-        checks.forEach((check, index) => {
-          check.addEventListener(
-            "change",
-            () => checkInput.call(element, drops[type][index]),
-            false
-          );
-        });
-
-        document.addEventListener("click", function (e) {
-          if (
-            !nodeWrap.contains(e.target) &&
-            !nodeWrap.previousSibling.contains(e.target)
-          ) {
-            if (nodeWrap.classList.contains("show")) {
-              nodeWrap.style.display = "none";
-              nodeWrap.classList.remove("show");
-            }
+        if (key === "nameEvent") {
+          if (!validateField(value, 3)) {
+            flag = true;
+            alertMsg.show("Invalid field. Min length is 3 characters.");
           }
-        });
+        }
+
+        if (key === "participants") {
+          if (!validateField(value)) {
+            flag = true;
+            alertMsg.show("Invalid field. Select at least one user.");
+          }
+        }
+
+        if (key === "day" || key === "time") {
+          value = Number(value);
+        }
+
+        newEvent[key] = value;
       }
     });
-  }
 
-  function checkInput(name) {
-    let value = this.value;
-    const arr = value ? value.split(", ") : [];
-
-    if (arr.includes(name)) {
-      arr.splice(arr.indexOf(name), 1);
+    if (flag) {
+      newEvent = null;
     } else {
-      arr.push(name);
+      if (!this.onCheckEvent(newEvent)) {
+        this.onAddEvent(newEvent);
+
+        alertMsg.show("Successful created event", "success");
+
+        setTimeout(() => {
+          location.href = "index.html";
+        }, 3000);
+      } else {
+        alertMsg.show(
+          "Failed to create an event. Time slot is already booked."
+        );
+      }
     }
 
-    value = arr.sort().join(", ");
-
-    this.value = value;
+    function validateField(value, minLenght = 0) {
+      return value.length > minLenght;
+    }
   }
 
-  function openDrop(element) {
+  showModal(e) {
+    const element = e.target.closest("#app").querySelector(".modal");
     element.style.display = "block";
 
     setTimeout(() => {
       element.classList.add("show");
     }, 0);
   }
-}
 
-dropCreator();
-
-function onDragStart(event) {
-  console.log("onDragStart", event);
-
-  event.dataTransfer.setData("text/plain", event.target.dataset.eventId);
-
-  // event
-  //   .currentTarget
-  //   .style
-  //   .backgroundColor = 'yellow';
-}
-
-function onDragOver(event) {
-  event.preventDefault();
-
-  event.currentTarget.style.backgroundColor = "rgba(13, 110, 253, .15)";
-}
-
-function onDragLeave(event) {
-  event.preventDefault();
-
-  event.currentTarget.style.backgroundColor = "";
-}
-
-function onDrop(event) {
-  //console.log("onDrop", event);
-  event.preventDefault();
-
-  event.currentTarget.style.backgroundColor = "";
-
-  if (!event.target.innerHTML) {
-    const id = event.dataTransfer.getData("text");
-
-    const [day, time] = id.split("-");
-    const newDay = event.target.cellIndex - 1;
-    const newTime = event.target.parentNode.rowIndex - 1;
-
-    // console.log(day, time);
-    // console.log(newDay, newTime);
-
-    const draggableElement = document.querySelector(`[data-event-id="${id}"]`);
-    const draggableElementParent = draggableElement.parentNode;
-    draggableElementParent.innerHTML = "";
-    draggableElement.dataset.eventId = `${newDay}-${newTime}`;
-    //console.log("draggableElement", draggableElement);
-    const dropzone = event.target;
-
-    //console.log("dropzone", dropzone);
-    dropzone.appendChild(draggableElement);
-
-    events.map((item) => {
-      if (item.day == day && item.time == time) {
-        item.day = newDay;
-        item.time = newTime;
-      }
-    });
-
-    localStorage.setItem("calendar", JSON.stringify(events));
-
-    event.dataTransfer.clearData();
+  openModal(e) {
+    this.renderModal(e);
+    this.showModal(e);
   }
 }
+
+class Controller {
+  constructor() {
+    this.model = new Model();
+    this.view = new View();
+
+    if (this.view.sort) {
+      this.view.sort.addEventListener("change", this.onSortEvents.bind(this), false)
+    }
+
+    if (this.view.form) {
+      this.view.form.addEventListener("submit", this.onSubmitForm.bind(this), false);
+    }
+
+    if (this.view.app) {
+      this.view.app.addEventListener("dragstart", this.onDragStartEvent.bind(this), false);
+      this.view.app.addEventListener("dragover", this.onDragOverEvent.bind(this), false);
+      this.view.app.addEventListener("dragleave", this.onDragLeaveEvent.bind(this), false);
+      this.view.app.addEventListener("drop", this.onDropEvent.bind(this), false);
+      this.view.app.addEventListener("click", this.onOpenModal.bind(this), false);
+      this.view.main.addEventListener("click", this.onCloseModal.bind(this), false);
+    }
+
+    this.view.bindShowEvents(this.onShowEvents.bind(this));
+    this.view.bindAddEvent(this.onAddEvent.bind(this));
+    this.view.bindGetEvents(this.onGetEvents.bind(this));
+    this.view.bindCheckEvent(this.onCheckEvent.bind(this));
+  }
+
+  onAddEvent(event) {
+    this.model.addEvent(event);
+  };
+
+  onUpdateEvent(event) {
+    this.model.updateEvent(event);
+  };
+
+  onDeleteEvent(id) {
+    this.model.deleteEvent(id);
+    this.view.deleteEvent(id);
+  };
+
+  onGetEvents() {
+    return this.model.getEvents();
+  };
+
+  onCheckEvent(event) {
+    return this.model.checkEvent(event);
+  };
+
+  onOpenModal(e) {
+    if (e.target && e.target.matches(".js-modal-open")) {
+      this.view.openModal(e);
+    }
+  };
+
+  onCloseModal(e) {
+    if (e.target && e.target.matches(".js-modal-close")) {
+      this.view.closeModal(e);
+    }
+
+    if (e.target && e.target.matches(".js-event-delete")) {
+      const id = e.target.closest("#app").querySelector(".modal").dataset
+        .modalEventId;
+      this.onDeleteEvent(id);
+      this.view.closeModal(e);
+    }
+  };
+
+  onDragStartEvent(e) {
+    if (e.target && e.target.matches(".event")) {
+      e.dataTransfer.setData("text/plain", e.target.dataset.eventId);
+    }
+  };
+
+  onDragOverEvent(e) {
+    if (e.target && e.target.matches("td")) {
+      e.preventDefault();
+
+      if (e.target.previousSibling)
+        e.target.style.backgroundColor = "rgba(13, 110, 253, .15)";
+    }
+  };
+
+  onDragLeaveEvent(e) {
+    if (e.target && e.target.matches("td")) {
+      e.preventDefault();
+
+      if (e.target.previousSibling) e.target.style.backgroundColor = "";
+    }
+  };
+
+  onDropEvent(e) {
+    if (e.target && e.target.matches("td")) {
+      e.preventDefault();
+
+      if (e.target.previousSibling) e.target.style.backgroundColor = "";
+
+      if (!e.target.innerHTML) {
+        const id = e.dataTransfer.getData("text");
+
+        const [day, time] = id.split("-");
+        const newDay = e.target.cellIndex - 1;
+        const newTime = e.target.parentNode.rowIndex - 1;
+
+        const draggableElement = document.querySelector(
+          `[data-event-id="${id}"]`
+        );
+        const draggableElementParent = draggableElement.parentNode;
+        draggableElementParent.innerHTML = "";
+        draggableElement.dataset.eventId = `${newDay}-${newTime}`;
+
+        const dropzone = e.target;
+        dropzone.appendChild(draggableElement);
+
+        this.onUpdateEvent({ day, time, newDay, newTime });
+
+        e.dataTransfer.clearData();
+      }
+    }
+  };
+
+  onShowEvents(events) {
+    this.view.showEvents(events);
+  };
+
+  onSortEvents(e) {
+    this.view.showEvents(this.model.events, e.target.value);
+  };
+
+  onSubmitForm(e) {
+    e.preventDefault();
+    this.view.submitForm();
+  };
+
+  init() {
+    if (this.view.app) {
+      this.view.renderTable();
+      this.onShowEvents(this.model.events);
+    }
+
+    if (this.view.selects) this.view.renderSelect();
+    if (this.view.drops) this.view.renderDrop();
+  }
+}
+
+const app = new Controller();
+app.init();
