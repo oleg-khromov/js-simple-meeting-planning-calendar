@@ -9,25 +9,42 @@
 .event {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
   background: #ffc107;
   height: 100%;
+  //max-width: 150px;
 
   &:hover {
     cursor: move;
   }
 
+  &__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    width: 100%;
+    padding: 8px 12px;
+    //max-width: 150px;
+  }
+
   &__name {
-    white-space: pre-line;
+    font-size: 14px;
+    white-space: break-spaces;
+    display: block;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   &__btn-del {
     align-self: flex-start;
+    flex-shrink: 0;
     cursor: pointer;
-    margin: 0 -5px 0 10px;
-    width: 0.5em;
-    height: 0.5em;
+    margin: 0 -6px 0 10px;
+    width: 0.3em;
+    height: 0.3em;
   }
 }
 
@@ -40,13 +57,42 @@
   }
 }
 
-.table td {
-  transition: background 0.15s linear;
+.table {
+  td,
+  th {
+    min-width: 2%;
+  }
+
+  td,
+  th {
+    &:first-child {
+      min-width: 80px;
+      width: 80px;
+
+      @media (min-width: 992px) {
+        min-width: auto;
+      }
+    }
+  }
+
+  td {
+    transition: background 0.15s linear;
+    min-width: 150px;
+
+    @media (min-width: 992px) {
+      min-width: auto;
+      width: 100%;
+    }
+  }
 }
 
 .table-box {
   min-height: 80vh;
   height: 100%;
+
+  @media (min-width: 992px) {
+    table-layout: fixed;
+  }
 }
 
 .col-wrap {
@@ -71,12 +117,14 @@
 }
 
 .alerts-wrap {
-  top: 20px;
+  bottom: 20px;
   left: var(--bs-gutter-x, 0.75rem);
   right: var(--bs-gutter-x, 0.75rem);
 }
 
 .modal {
+  transition: all 0.15s linear;
+
   &__overlay {
     position: fixed;
     width: 100%;
@@ -93,9 +141,8 @@
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    max-width: 280px;
     width: 100%;
-    /* margin: 20px; */
+    max-width: 280px;
     padding: 20px 25px;
     background: #fff;
     border-radius: 5px;

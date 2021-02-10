@@ -20,17 +20,19 @@ class Alert {
 
   render(text, type = "danger") {
     const div = document.createElement("div");
-    div.className = `alert alert-${type} alert-dismissible fade show`;
+    div.className = `alert alert-${type} alert-dismissible fade`;
     div.innerHTML = `
         ${text}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     `;
 
-    this.wrapper.prepend(div);
+    return div;
   }
 
   show(text, type) {
-    this.render(text, type);
+    const element = this.render(text, type);
+    this.wrapper.append(element);
+    setTimeout(() => element.classList.add("show"), 150);
   }
 
   destroy(e) {
@@ -61,11 +63,16 @@ class Model {
     this._setEvents();
   }
 
+  checkEvent({ day, time }) {
+    return this.events.find((event) => event.day == day && event.time == time);
+  }
+
   deleteEvent(id) {
     const [day, time] = id.split("-");
     const index = this.events.findIndex(
       (event) => event.day == day && event.time == time
     );
+
     if (index >= 0) this.events.splice(index, 1);
 
     this._setEvents();
@@ -80,10 +87,6 @@ class Model {
     });
 
     this._setEvents();
-  }
-
-  checkEvent({ day, time }) {
-    return this.events.find((event) => event.day == day && event.time == time);
   }
 }
 
@@ -130,7 +133,7 @@ class View {
     return element;
   }
 
-  createElementCells(tag, parent, row) {
+  createTableCells(tag, parent, row) {
     for (let col = 0; col <= day.length; col++) {
       if (tag === "th") {
         let th = this.createElement(tag);
@@ -156,7 +159,7 @@ class View {
         let tr = this.createElement("tr");
         thead.appendChild(tr);
 
-        this.createElementCells("th", tr);
+        this.createTableCells("th", tr);
 
         tbody = this.createElement("tbody");
         table.appendChild(tbody);
@@ -164,11 +167,25 @@ class View {
         let tr = this.createElement("tr");
         tbody.appendChild(tr);
 
-        this.createElementCells("td", tr, row);
+        this.createTableCells("td", tr, row);
       }
     }
 
     this.app.appendChild(table);
+  }
+
+  createSelectOption(text, index) {
+    const option = this.createElement("option");
+
+    if (typeof index === "number") {
+      option.value = index;
+    } else {
+      option.value = "all";
+    }
+
+    option.innerHTML = text;
+
+    return option;
   }
 
   renderSelect() {
@@ -178,32 +195,54 @@ class View {
       time,
     };
 
-    function createOption(text, index) {
-      const option = document.createElement("option");
-
-      if (typeof index === "number") {
-        option.value = index;
-      } else {
-        option.value = "all";
-      }
-
-      option.innerHTML = text;
-      this.append(option);
-    }
-
     if (this.selects.length) {
       this.selects.forEach((select) => {
         let type = select.dataset.selectType;
+        let option;
 
-        if (type === "users" && select.id === "sort") {
-          createOption.call(select, "All members");
+        if (select.dataset.selectAll) {
+          option = this.createSelectOption(select.dataset.selectAll);
+          select.append(option);
         }
 
         selects[type].forEach((item, index) => {
-          createOption.call(select, item, index);
+          option = this.createSelectOption(item, index);
+          select.append(option);
         });
       });
     }
+  }
+
+  createDropCheck(text, index) {
+    const div = this.createElement("div");
+    div.classList.add("form-check");
+    div.innerHTML = `
+      <input class="form-check-input" name="drop" type="checkbox" value="${index}" id="check${index}">
+      <label class="form-check-label" for="check${index}">
+        ${text}
+      </label>
+    `;
+
+    return div;
+  }
+
+  setValueDropInput(name) {
+    let value = this.value;
+    const arr = value ? value.split(", ") : [];
+
+    if (arr.includes(name)) {
+      arr.splice(arr.indexOf(name), 1);
+    } else {
+      arr.push(name);
+    }
+
+    value = arr.sort().join(", ");
+    this.value = value;
+  }
+
+  openDrop(element) {
+    element.style.display = "block";
+    setTimeout(() => element.classList.add("show"), 0);
   }
 
   renderDrop() {
@@ -211,87 +250,133 @@ class View {
       users,
     };
 
-    function createElement(text, index) {
-      const node = document.createElement("div");
-      node.classList.add("form-check");
-      node.innerHTML = `
-        <input class="form-check-input" name="drop" type="checkbox" value="${index}" id="check${index}">
-        <label class="form-check-label" for="check${index}">
-          ${text}
-        </label>
-      `;
-      this.append(node);
-    }
-
     if (this.drops.length) {
       this.drops.forEach((drop) => {
         let type = drop.dataset.dropType;
 
-        if (type === "participants") type = "users";
-
         if (drops[type]) {
-          const nodeWrap = document.createElement("div");
-          nodeWrap.classList.add(
+          const wrap = this.createElement("div");
+          wrap.classList.add(
             "c-drop__menu",
             "shadow",
             "bg-white",
             "rounded",
             "fade"
           );
-          drop.after(nodeWrap);
+          drop.after(wrap);
 
           drops[type].forEach((item, index) => {
-            createElement.call(nodeWrap, item, index);
+            const div = this.createDropCheck(item, index);
+            wrap.append(div);
           });
 
-          drop.addEventListener("click", () => openDrop(nodeWrap), false);
+          drop.addEventListener("click", () => this.openDrop(wrap), false);
 
-          const checks = nodeWrap.querySelectorAll(".form-check-input");
+          const checks = wrap.querySelectorAll(".form-check-input");
 
           checks.forEach((check, index) => {
             check.addEventListener(
               "change",
-              () => checkInput.call(drop, drops[type][index]),
+              () => this.setValueDropInput.call(drop, drops[type][index]),
               false
             );
           });
 
           document.addEventListener("click", function (e) {
             if (
-              !nodeWrap.contains(e.target) &&
-              !nodeWrap.previousSibling.contains(e.target)
+              !wrap.contains(e.target) &&
+              !wrap.previousSibling.contains(e.target)
             ) {
-              if (nodeWrap.classList.contains("show")) {
-                nodeWrap.style.display = "none";
-                nodeWrap.classList.remove("show");
+              if (wrap.classList.contains("show")) {
+                wrap.classList.remove("show");
+                setTimeout(() => wrap.style.display = "none", 0);
               }
             }
           });
         }
       });
     }
+  }
 
-    function checkInput(name) {
-      let value = this.value;
-      const arr = value ? value.split(", ") : [];
+  showEvents(events, sort = "all") {
+    const table = this.getElement("#table table");
 
-      if (arr.includes(name)) {
-        arr.splice(arr.indexOf(name), 1);
-      } else {
-        arr.push(name);
+    events.map((event) => {
+      const { nameEvent, day, time } = event;
+      const participants = event.users.slice(", ");
+
+      const innerHTML =
+        sort === "all" || participants.includes(users[sort])
+        ? `<div class="event" draggable="true" data-event-id="${day}-${time}">
+            <div class="event__inner">
+              <span class="event__name">${nameEvent}</span>
+              <span class="btn-close event__btn-del js-modal-open"></span>
+            </div>
+          </div>`
+        : null;
+
+      const cell = +day + 1;
+      const row = +time + 1;
+
+      table.rows[row].cells[cell].innerHTML = innerHTML;
+    });
+  }
+
+  deleteEvent(id) {
+    const element = document.querySelector(`[data-event-id=\"${id}\"]`);
+    element.parentNode.innerHTML = "";
+    setTimeout(() => element.remove(), 150);
+  }
+
+  validateField(value, minLenght = 0) {
+    return value.length > minLenght;
+  }
+
+  submitForm() {
+    const fields = ["nameEvent", "users", "day", "time"];
+    const elements = this.form.elements;
+    let newEvent = {};
+    let validFlag = false;
+    const alertMsg = new Alert();
+
+    [...elements].forEach((field) => {
+      if (fields.includes(field.name)) {
+        const key = field.name;
+        let value = field.value;
+
+        if (key === "nameEvent") {
+          if (!this.validateField(value, 3)) {
+            validFlag = true;
+            alertMsg.show("Invalid field. Min length is 3 characters.");
+          }
+        }
+
+        if (key === "users") {
+          if (!this.validateField(value)) {
+            validFlag = true;
+            alertMsg.show("Invalid field. Select at least one user.");
+          }
+        }
+
+        if (key === "day" || key === "time") {
+          value = Number(value);
+        }
+
+        newEvent[key] = value;
       }
+    });
 
-      value = arr.sort().join(", ");
+    if (validFlag) {
+      newEvent = null;
+    } else {
+      if (!this.onCheckEvent(newEvent)) {
+        this.onAddEvent(newEvent);
+        alertMsg.show("Successful created event", "success");
 
-      this.value = value;
-    }
-
-    function openDrop(element) {
-      element.style.display = "block";
-
-      setTimeout(() => {
-        element.classList.add("show");
-      }, 0);
+        setTimeout(() => location.href = "index.html", 3000);
+      } else {
+        alertMsg.show("Failed to create an event. Time slot is already booked.");
+      }
     }
   }
 
@@ -301,8 +386,7 @@ class View {
       .eventId;
     const text = `Are you sure you want to delete <b>"${str}"</b> event?`;
 
-    const wrap = document.querySelector("#app");
-    let div = document.createElement("div");
+    const div = this.createElement("div");
     div.className = "modal fade";
     div.dataset.modalEventId = eventId;
     div.innerHTML = `
@@ -316,108 +400,7 @@ class View {
         </div>
     `;
 
-    wrap.append(div);
-  }
-
-  deleteEvent(id) {
-    const element = document.querySelector(`[data-event-id=\"${id}\"]`);
-    element.parentNode.innerHTML = "";
-    setTimeout(() => element.remove(), 150);
-  }
-
-  closeModal(e) {
-    const element = e.target.closest("#app").querySelector(".modal");
-
-    element.classList.remove("show");
-    element.style.display = "none";
-    //element.style.display = "none";
-
-    // setTimeout(() => {
-    //   //element.classList.remove("show");
-    //   //element.style.display = "none";
-    // }, 0)
-    setTimeout(() => element.remove(), 150);
-  }
-
-  showEvents(events, sort = "all") {
-    const table = this.getElement("#table table");
-
-    events.map((event) => {
-      const { nameEvent, participants, day, time } = event;
-      const arrParticipants = participants.slice(", ");
-
-      const innerHTML =
-        sort === "all" || arrParticipants.includes(users[sort])
-          ? `
-        <div class="event" draggable="true" data-event-id="${day}-${time}">
-          <span class="event__name">${nameEvent}</span>
-          <span class="btn-close event__btn-del js-modal-open"></span>
-        </div>
-      `
-          : null;
-
-      const cell = +day + 1;
-      const row = +time + 1;
-
-      table.rows[row].cells[cell].innerHTML = innerHTML;
-    });
-  }
-
-  submitForm() {
-    const fields = ["nameEvent", "participants", "day", "time"];
-    const elements = this.form.elements;
-    let newEvent = {};
-    let flag = false;
-    const alertMsg = new Alert();
-
-    [...elements].forEach((field) => {
-      if (fields.includes(field.name)) {
-        const key = field.name;
-        let value = field.value;
-
-        if (key === "nameEvent") {
-          if (!validateField(value, 3)) {
-            flag = true;
-            alertMsg.show("Invalid field. Min length is 3 characters.");
-          }
-        }
-
-        if (key === "participants") {
-          if (!validateField(value)) {
-            flag = true;
-            alertMsg.show("Invalid field. Select at least one user.");
-          }
-        }
-
-        if (key === "day" || key === "time") {
-          value = Number(value);
-        }
-
-        newEvent[key] = value;
-      }
-    });
-
-    if (flag) {
-      newEvent = null;
-    } else {
-      if (!this.onCheckEvent(newEvent)) {
-        this.onAddEvent(newEvent);
-
-        alertMsg.show("Successful created event", "success");
-
-        setTimeout(() => {
-          location.href = "index.html";
-        }, 3000);
-      } else {
-        alertMsg.show(
-          "Failed to create an event. Time slot is already booked."
-        );
-      }
-    }
-
-    function validateField(value, minLenght = 0) {
-      return value.length > minLenght;
-    }
+    return div;
   }
 
   showModal(e) {
@@ -430,9 +413,74 @@ class View {
   }
 
   openModal(e) {
-    this.renderModal(e);
+    const wrap = document.querySelector("#app");
+    const element = this.renderModal(e);
+    wrap.append(element);
+
     this.showModal(e);
   }
+
+  closeModal(e) {
+    const element = e.target.closest("#app").querySelector(".modal");
+
+    element.classList.remove("show");
+
+    setTimeout(() => element.style.zIndex = "-1", 0);
+    setTimeout(() => element.remove(), 150);
+  }
+
+  DragStartEvent(e) {
+    if (e.target && e.target.matches(".event")) {
+      e.dataTransfer.setData("text/plain", e.target.dataset.eventId);
+    }
+  }
+
+  DragOverEvent(e) {
+    if (e.target && e.target.matches("td")) {
+      e.preventDefault();
+
+      if (e.target.previousSibling)
+        e.target.style.backgroundColor = "rgba(13, 110, 253, .15)";
+    }
+  }
+
+  DragLeaveEvent(e) {
+    if (e.target && e.target.matches("td")) {
+      e.preventDefault();
+
+      if (e.target.previousSibling) e.target.style.backgroundColor = "";
+    }
+  }
+
+  DropEvent(e) {
+    if (e.target && e.target.matches("td")) {
+      e.preventDefault();
+
+      if (e.target.previousSibling) e.target.style.backgroundColor = "";
+
+      if (!e.target.innerHTML) {
+        const id = e.dataTransfer.getData("text");
+
+        const [day, time] = id.split("-");
+        const newDay = e.target.cellIndex - 1;
+        const newTime = e.target.parentNode.rowIndex - 1;
+
+        const draggableElement = document.querySelector(
+          `[data-event-id="${id}"]`
+        );
+        const draggableElementParent = draggableElement.parentNode;
+        draggableElementParent.innerHTML = "";
+        draggableElement.dataset.eventId = `${newDay}-${newTime}`;
+
+        const dropzone = e.target;
+        dropzone.appendChild(draggableElement);
+
+        e.dataTransfer.clearData();
+
+        return { day, time, newDay, newTime };
+      }
+    }
+  };
 }
 
 class Controller {
@@ -504,56 +552,20 @@ class Controller {
   };
 
   onDragStartEvent(e) {
-    if (e.target && e.target.matches(".event")) {
-      e.dataTransfer.setData("text/plain", e.target.dataset.eventId);
-    }
+    this.view.DragStartEvent(e);
   };
 
   onDragOverEvent(e) {
-    if (e.target && e.target.matches("td")) {
-      e.preventDefault();
-
-      if (e.target.previousSibling)
-        e.target.style.backgroundColor = "rgba(13, 110, 253, .15)";
-    }
+    this.view.DragOverEvent(e);
   };
 
   onDragLeaveEvent(e) {
-    if (e.target && e.target.matches("td")) {
-      e.preventDefault();
-
-      if (e.target.previousSibling) e.target.style.backgroundColor = "";
-    }
+    this.view.DragLeaveEvent(e);
   };
 
   onDropEvent(e) {
-    if (e.target && e.target.matches("td")) {
-      e.preventDefault();
-
-      if (e.target.previousSibling) e.target.style.backgroundColor = "";
-
-      if (!e.target.innerHTML) {
-        const id = e.dataTransfer.getData("text");
-
-        const [day, time] = id.split("-");
-        const newDay = e.target.cellIndex - 1;
-        const newTime = e.target.parentNode.rowIndex - 1;
-
-        const draggableElement = document.querySelector(
-          `[data-event-id="${id}"]`
-        );
-        const draggableElementParent = draggableElement.parentNode;
-        draggableElementParent.innerHTML = "";
-        draggableElement.dataset.eventId = `${newDay}-${newTime}`;
-
-        const dropzone = e.target;
-        dropzone.appendChild(draggableElement);
-
-        this.onUpdateEvent({ day, time, newDay, newTime });
-
-        e.dataTransfer.clearData();
-      }
-    }
+    const event = this.view.DropEvent(e)
+    this.onUpdateEvent({ ...event });
   };
 
   onShowEvents(events) {
@@ -575,8 +587,13 @@ class Controller {
       this.onShowEvents(this.model.events);
     }
 
-    if (this.view.selects) this.view.renderSelect();
-    if (this.view.drops) this.view.renderDrop();
+    if (this.view.selects) {
+      this.view.renderSelect();
+    }
+
+    if (this.view.drops) {
+      this.view.renderDrop();
+    }
   }
 }
 

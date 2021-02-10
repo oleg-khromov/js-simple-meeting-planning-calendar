@@ -9,7 +9,7 @@
 <script defer src="./assets/js/main.js"></script><link href="./assets/css/main.css" rel="stylesheet"></head>
 <body>
   <div id="app">
-    <div id="alerts" class="fixed-top alerts-wrap"></div>
+    <div id="alerts" class="fixed-bottom alerts-wrap"></div>
     <div class="container">
       <div class="row row-panel">
         <div class="col d-flex justify-content-between align-items-center">
@@ -24,28 +24,28 @@
               <div class="mb-3 row">
                 <label for="nameEvent" class="col-sm-4 col-lg-3 col-form-label">Name of the event:</label>
                 <div class="col-sm-8 col-lg-9">
-                  <input type="text" class="form-control" id="nameEvent" name="nameEvent">
+                  <input id="nameEvent" type="text" value="" class="form-control" name="nameEvent">
                 </div>
               </div>
               <div class="mb-3 row">
-                <label for="participants" class="col-sm-4 col-lg-3 col-form-label">Participants:</label>
+                <label for="users" class="col-sm-4 col-lg-3 col-form-label">Participants:</label>
                 <div class="col-sm-8 col-lg-9">
                   <div class="c-drop">
-                    <input id="participants" value="" class="form-select" name="participants" data-drop-type="participants" readonly>
+                    <input id="users" type="text" value="" class="form-select" name="users" data-drop-type="users" readonly>
                   </div>
                 </div>
               </div>
               <div class="mb-3 row">
                 <label for="day" class="col-sm-4 col-lg-3 col-form-label">Day:</label>
                 <div class="col-sm-8 col-lg-9">
-                  <select id="day" class="form-select" name="day" data-select-type="day">
+                  <select id="day" type="text" value="" class="form-select" name="day" data-select-type="day">
                   </select>
                 </div>
               </div>
               <div class="mb-4 row">
                 <label for="time" class="col-sm-4 col-lg-3 col-form-label">Time:</label>
                 <div class="col-sm-8 col-lg-9">
-                  <select id="time" class="form-select" name="time" data-select-type="time">
+                  <select id="time" type="text" value="" class="form-select" name="time" data-select-type="time">
                   </select>
                 </div>
               </div>
