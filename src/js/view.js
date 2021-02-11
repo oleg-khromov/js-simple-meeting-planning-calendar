@@ -284,7 +284,7 @@ export class View {
         this.onAddEvent(newEvent);
         alertMsg.show("Successful created event", "success");
 
-        setTimeout(() => location.href = "index.html", 3000);
+        setTimeout(() => location.href = "index.html", 2500);
       } else {
         alertMsg.show("Failed to create an event. Time slot is already booked.");
       }

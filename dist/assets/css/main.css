@@ -17,13 +17,13 @@
     justify-content: space-between;
     height: 100%;
     width: 100%;
-    padding: 8px 12px; }
+    padding: 0 12px; }
   .event__name {
     font-size: 14px;
     white-space: break-spaces;
     display: block;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis; }
@@ -31,7 +31,7 @@
     align-self: flex-start;
     flex-shrink: 0;
     cursor: pointer;
-    margin: 0 -6px 0 10px;
+    margin: 6px -6px 0 10px;
     width: 0.3em;
     height: 0.3em; }
 
@@ -129,4 +129,9 @@
     z-index: -1; }
     .c-drop__menu.show {
       z-index: 10; }
+
+.row-wrap {
+  min-height: 60vh;
+  align-items: center;
+  margin-bottom: 40px; }
 
