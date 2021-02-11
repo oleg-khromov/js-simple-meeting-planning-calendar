@@ -5,9 +5,9 @@ export class View {
   constructor() {
     this.main = this.getElement("#app");
     this.app = this.getElement("#table");
-    this.selects = this.getAllElements("select[data-select-type]");
+    this.selects = this.getAllElements("[data-select-type]");
     this.drops = this.getAllElements("[data-drop-type]");
-    this.sort = this.getElement("select#sort");
+    this.sort = this.getElement("[data-select-sort]");
     this.form = this.getElement("form#createEventForm");
   }
 
@@ -116,8 +116,8 @@ export class View {
           select.append(option);
         }
 
-        selects[type].forEach((item, index) => {
-          option = this.createSelectOption(item, index);
+        selects[type].forEach((text, index) => {
+          option = this.createSelectOption(text, index);
           select.append(option);
         });
       });

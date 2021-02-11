@@ -19,6 +19,11 @@ export class Alert {
     const element = this.render(text, type);
     this.wrapper.append(element);
     setTimeout(() => element.classList.add("show"), 150);
+
+    setTimeout(() => {
+      element.classList.remove("show");
+      setTimeout(() => element.remove(), 150);
+    }, 3000);
   }
 
   destroy(e) {
