@@ -3,26 +3,42 @@ const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const minify = require("optimize-css-assets-webpack-plugin");
+const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin')
+const TerserPlugin = require('terser-webpack-plugin')
 
-module.exports = {
-  mode: "development",
+const pages = [
+  {
+    name: "index",
+    title: "Calendar",
+  },
+  {
+    name: "create-event",
+    title: "Create new event",
+  }
+];
+
+const dir = {
+  src: path.resolve(__dirname, './src'),
+  build: path.resolve(__dirname, './dist'),
+}
+
+const config = {
   entry: {
-    main: path.resolve(__dirname, "./src/index.js"),
+    main: dir.src + "/index.js",
   },
   output: {
-    path: path.resolve(__dirname, "./dist"),
+    path: dir.build,
     filename: "./assets/js/main.js",
   },
   module: {
     rules: [
       {
-        test: /\.js$|jsx/,
+        test: /\.js$/,
         exclude: /node_modules/,
         // use: ["babel-loader"],
       },
       {
-        test: /\.(s*)css$/,
+        test: /\.(scss|css)$/,
         use: [
           MiniCssExtractPlugin.loader,
           //'style-loader',
@@ -33,20 +49,7 @@ module.exports = {
       },
     ],
   },
-  optimization: {
-    minimizer: [new minify({})],
-  },
   plugins: [
-    new HtmlWebpackPlugin({
-      title: "Calendar",
-      filename: "index.html",
-      template: path.resolve(__dirname, "./src/index.html"),
-    }),
-    new HtmlWebpackPlugin({
-      title: "Create new event",
-      filename: "create-event.html",
-      template: path.resolve(__dirname, "./src/create-event.html"),
-    }),
     new MiniCssExtractPlugin({
       filename: "./assets/css/main.css",
     }),
@@ -55,11 +58,34 @@ module.exports = {
   ],
   devServer: {
     historyApiFallback: true,
-    contentBase: path.resolve(__dirname, "./dist"),
+    contentBase: dir.build,
     open: true,
     compress: true,
     hot: true,
     port: 3000,
   },
-  resolve: { extensions: [".js"] },
+  resolve: { extensions: [".js"] }
 };
+
+pages.forEach(({ name, title }) => {
+  config.plugins.push(
+    new HtmlWebpackPlugin({
+      title: `${title}`,
+      filename: `${name}.html`,
+      template: dir.src + `/${name}.html`,
+      inject: 'body'
+    }));
+})
+
+if (!config.mode) {
+  config.mode = "development";
+}
+
+if (config.mode === "production") {
+  config.optimization = {
+    minimize: true,
+    minimizer: [new OptimizeCssAssetsPlugin(), new TerserPlugin()],
+  }
+}
+
+module.exports = config;
